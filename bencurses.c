@@ -61,7 +61,18 @@ int main(int argc, char** argv)
     box(windows[0].ncurses_win_ptr, 0, 0);
     wrefresh(windows[0].ncurses_win_ptr);
 
-    wgetch(windows[0].ncurses_win_ptr);
+    ben_win* current_benwin = &windows[0];
+    WINDOW* current_nwin = windows[0].ncurses_win_ptr;
+
+    curs_set(0);
+
+    int c;
+    chtype ch = mvwinch(current_nwin, 0, 0);
+    while ((c = mvwgetch(current_nwin, 0, 0)) != 'q')
+    {
+	    mvwaddch(current_nwin, 0, 0, ch);
+	    wrefresh(current_nwin);
+    }
 
     /*
     srand(time(0));
