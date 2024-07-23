@@ -1,3 +1,4 @@
+#include <stdint.h>
 #define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <wchar.h>
@@ -33,6 +34,12 @@
 └────┴───┴─────┴───────────────────────┴─────┴─────┴─────┘
 */
 
+// @key typedef
+typedef uint64_t ben_key;
+#define BEN_KEY_ALT 1ULL << 32
+#define NCURSES_KEY_ALT 27
+
+// @ben win
 #define BEN_WIN_FLAGS_DIRTY_BIT 1
 
 typedef struct ben_win
@@ -48,6 +55,10 @@ int main(int argc, char** argv)
     setlocale(LC_ALL, "");
 
     initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
@@ -66,11 +77,21 @@ int main(int argc, char** argv)
 
     curs_set(0);
 
-    int c;
     chtype ch = mvwinch(current_nwin, 0, 0);
-    while ((c = mvwgetch(current_nwin, 0, 0)) != 'q')
+    ben_key bc = 0;
+    int c = bc;
+    while ((bc = (ben_key)mvwgetch(current_nwin, 0, 0)) != 'q')
     {
+	    c = (int)bc;
 	    mvwaddch(current_nwin, 0, 0, ch);
+
+	    switch (c)
+	    {
+		    case NCURSES_KEY_ALT:
+			    bc |= BEN_KEY_ALT;
+			    break;
+	    }
+
 	    wrefresh(current_nwin);
     }
 
