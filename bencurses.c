@@ -1,5 +1,5 @@
-#include <stdint.h>
 #define _XOPEN_SOURCE 700
+#include <stdint.h>
 #include <stdio.h>
 #include <wchar.h>
 #include <locale.h>
@@ -36,18 +36,63 @@
 
 // @key typedef
 typedef uint64_t ben_key;
-#define BEN_KEY_ALT 1ULL << 32
 #define NCURSES_KEY_ALT 27
 
-// @ben win
-#define BEN_WIN_FLAGS_DIRTY_BIT 1
+typedef uint8_t ben_win_type;
+#define BEN_WIN_TYPE_NULL  0
+#define BEN_WIN_TYPE_LEAF  1
+#define BEN_WIN_TYPE_LEFT  2
+#define BEN_WIN_TYPE_RIGHT 3
 
+// @ben win
 typedef struct ben_win
 {
-	WINDOW* ncurses_win_ptr;
-	struct ben_win* region_child_win_ptr;
-	int flags;
+	WINDOW* window;
+	int first;
+	int second;
+	ben_win_type type;
 } ben_win;
+
+// @ben win combo
+int combo_start_chars_written = 0;
+int combo_end_chars_written = 0;
+
+// @ben win combo print end
+void ben_win_print_combo_end(const char* end)
+{
+	const char* end_str;
+	combo_end_chars_written = strlen(end);
+}
+
+// @ben win mvwaddwstr
+cchar_t* ben_win_mvwaddwstr(WINDOW* win, int y, int x, const wchar_t* str)
+{
+	static cchar_t* old_str;
+
+	if (win == NULL || str == NULL)
+	{
+		free(old_str);
+		return NULL;
+	}
+
+	int old_str_len = wcslen(str);
+	int old_str_width = wcswidth(str, old_str_len);
+
+	old_str = realloc(old_str, old_str_width * sizeof(cchar_t));
+
+	for (int i = 0; i < old_str_width; i++)
+		mvwin_wch(win, y, x + i, old_str + i);
+
+	mvwaddwstr(win, y, x, str);
+
+	return old_str;
+}
+
+// @ben win cleanup
+void ben_win_cleanup()
+{
+	ben_win_mvwaddwstr(0, 0, 0, 0);
+}
 
 // @main
 int main(int argc, char** argv)
@@ -62,73 +107,68 @@ int main(int argc, char** argv)
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
-    int w = 0;
     ben_win* windows = malloc(sizeof(ben_win));
 
-    windows[0].ncurses_win_ptr = newwin(rows, cols, 0, 0);
-    windows[0].region_child_win_ptr = NULL;
-    windows[0].flags = 0;
+    windows[0].window = NULL;
+    windows[0].first = 1;
+    windows[0].second = BEN_WIN_TYPE_NULL;
+    windows[0].type = BEN_WIN_TYPE_NULL;
 
-    box(windows[0].ncurses_win_ptr, 0, 0);
-    wrefresh(windows[0].ncurses_win_ptr);
+    windows[1].window = NULL;
+    windows[1].first = BEN_WIN_TYPE_NULL;
+    windows[1].second = BEN_WIN_TYPE_NULL;
+    windows[1].type = BEN_WIN_TYPE_NULL;
 
-    ben_win* current_benwin = &windows[0];
-    WINDOW* current_nwin = windows[0].ncurses_win_ptr;
+    WINDOW* win = newwin(rows, cols, 0, 0);
+    windows[1].window = win;
+
+    box(win, 0, 0);
+    wrefresh(win);
 
     curs_set(0);
 
-    chtype ch = mvwinch(current_nwin, 0, 0);
-    ben_key bc = 0;
-    int c = bc;
-    while ((bc = (ben_key)mvwgetch(current_nwin, 0, 0)) != 'q')
+    int cs = 0;
+    int ce = 0;
+    int c;
+    while ((c = mvwgetch(win, 0, 0)) != 'q')
     {
-	    c = (int)bc;
-	    mvwaddch(current_nwin, 0, 0, ch);
-
 	    switch (c)
 	    {
-		    case NCURSES_KEY_ALT:
-			    bc |= BEN_KEY_ALT;
+		    // for all of the possible combo starts
+		    case 'W':
+			    ben_win_mvwaddwstr(win, rows - 1, 1, L"ALT ");
+			    cs = c;
+			    break;
+
+		    // for all of the possible combo ends
+		    case 'h':
+		    case 'j':
+		    case 'k':
+		    case 'l':
+		    case 'r':
+		    case 'd':
+			    /*
+			     So what I need to do now is make it  
+			     possible to terminate a combo with an
+			     end character by storing the result of
+			     the ben_win_mvwaddwstr() to a cchar_t
+			     buffer.
+
+			     Maybe if I supply an empty string it
+			     should write using the static buffer
+			     by default.
+			     */
+
+			    ce = c;
 			    break;
 	    }
 
-	    wrefresh(current_nwin);
+	    // if (asking for verification) switch () case 'y': verify(); //
+
+	    wrefresh(win);
     }
 
-    /*
-    srand(time(0));
-
-    int vowel_index_selected = rand() % ALLOPHONE_COUNT;
-    int c = 0;
-    while (c != 'q')
-    {
-	    if (c == KEY_RESIZE)
-	    {
-                    getmaxyx(stdscr, rows, cols);
-	            wresize(win_orig, rows, orig_x );
-	            wresize(win_keyboard, keyboard_y, cols - orig_x );
-	            wresize(win_input, rows - keyboard_y, cols - orig_x - menu_x);
-	            wresize(win_menu, rows - keyboard_y, menu_x);
-	            mvwin(win_menu, keyboard_y, cols - menu_x);
-
-	            wclear(win_orig);
-	            wclear(win_keyboard);
-	            wclear(win_menu);
-	            wclear(win_input);
-	    }
-
-            print_original(win_orig, quiz_flags);
-	    print_keyboard(win_keyboard);
-	    print_menu(win_menu, (quiz_flags & QUIZ_FLAGS_SINGLE_KEY_MODE_BIT) >> 2);
-	    print_input(win_input, vowel_index_selected, quiz_flags);
-
-	    c = process_input(win_input, &engine, &quiz_flags, vowel_index_selected, &vowel_index_selected);
-
-	    refresh();
-    }
-    */
-
-    delwin(windows[0].ncurses_win_ptr);
+    delwin(win);
     free(windows);
     endwin();
 
