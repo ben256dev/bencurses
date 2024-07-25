@@ -166,18 +166,13 @@ int main(int argc, char** argv)
 			     * functionality.  Actually,  you  should exit the
 			     * program  simply  by  closing all windows.  That
 			     * makes  the  most  sense  to  me.
-			     * 
-			     * However,  the problem  right now  is   that the
-                             * current method for getting what is  overwritten
-                             * doesn't seem to  accurately retrieve the  width
-			     * of   overwritten   characters.
-			     * 
-			     * I am really tired of this bullshit trying to
-			     * draw over the border. I don't know why it is so
-			     * difficult to simply get the contents ncurses
-			     * overwrites and buff them into a buffer. I
-			     * should just give up and redraw the border each
-			     * time. It's probably not that slow.
+			     *
+			     * Jesus,  I spent a  lot of  time  trying to  make
+			     * reading from the screen work. I don't understand
+			     * what makes  that shit impossible. Anyways,  it's
+			     * not  necessary.  Now  I can focus on the actuall
+			     * binary  tree  data   structure   and  the window
+			     * functionality.
 			     */
 			    box(win, 0, 0);
 			    ce = c;
