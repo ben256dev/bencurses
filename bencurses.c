@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 /*
           ╭───╮      
@@ -65,15 +66,13 @@ void ben_win_print_combo_end(const char* end)
 }
 
 // @ben win mvwaddwstr
-cchar_t* ben_win_mvwaddwstr(WINDOW* win, int y, int x, const wchar_t* str)
+wchar_t* ben_win_mvwaddwstr(WINDOW* win, int y, int x, const wchar_t* str)
 {
-	static cchar_t* old_str;
+	static wchar_t* old_str;
 
 	if (str == NULL)
 	{
-		for (int i = 0; old_str[i].chars[0] != L'\0'; i++)
-			mvwadd_wch(win, y, x + i, old_str + i);
-
+		mvwaddwstr(win, y, x, old_str);
 		return old_str;
 	}
 	if (win == NULL)
@@ -85,10 +84,14 @@ cchar_t* ben_win_mvwaddwstr(WINDOW* win, int y, int x, const wchar_t* str)
 	int old_str_len = wcslen(str);
 	int old_str_width = wcswidth(str, old_str_len);
 
-	old_str = realloc(old_str, old_str_width * sizeof(cchar_t));
+	old_str = realloc(old_str, old_str_width * sizeof(wchar_t));
 
 	for (int i = 0; i < old_str_width; i++)
-		mvwin_wch(win, y, x + i, old_str + i);
+	{
+		cchar_t cc;
+		mvwin_wch(win, y, x + i, &cc);
+		getcchar(&cc, &old_str[i], 0, 0, 0);
+	}
 
 	mvwaddwstr(win, y, x, str);
 
@@ -139,22 +142,16 @@ int main(int argc, char** argv)
     int c;
     while ((c = mvwgetch(win, 0, 0)) != 'q')
     {
+	    getmaxyx(stdscr, rows, cols);
+
 	    switch (c)
 	    {
 		    // for all of the possible combo starts
 		    #define CS_W 1
 		    case 'W':
-			    if (cs & CS_W) break;
-
-			    if (cs)
-			    {
-				    ben_win_mvwaddwstr(win, rows - 1, 1, NULL);
-				    cs = 0;
-			    }
 			    wattron(win, A_REVERSE);
-			    ben_win_mvwaddwstr(win, rows - 1, 1, L" ALT ");
+			    ben_win_mvwaddwstr(win, rows - 1, 1, L" W ");
 			    wattroff(win, A_REVERSE);
-			    cs ^= CS_W;
 			    break;
 
 		    // for all of the possible combo ends
@@ -169,8 +166,20 @@ int main(int argc, char** argv)
 			     * functionality.  Actually,  you  should exit the
 			     * program  simply  by  closing all windows.  That
 			     * makes  the  most  sense  to  me.
+			     * 
+			     * However,  the problem  right now  is   that the
+                             * current method for getting what is  overwritten
+                             * doesn't seem to  accurately retrieve the  width
+			     * of   overwritten   characters.
+			     * 
+			     * I am really tired of this bullshit trying to
+			     * draw over the border. I don't know why it is so
+			     * difficult to simply get the contents ncurses
+			     * overwrites and buff them into a buffer. I
+			     * should just give up and redraw the border each
+			     * time. It's probably not that slow.
 			     */
-			    ben_win_mvwaddwstr(win, rows - 1, 1, NULL);
+			    box(win, 0, 0);
 			    ce = c;
 			    cs = 0;
 			    break;
