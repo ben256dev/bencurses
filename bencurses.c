@@ -69,7 +69,14 @@ cchar_t* ben_win_mvwaddwstr(WINDOW* win, int y, int x, const wchar_t* str)
 {
 	static cchar_t* old_str;
 
-	if (win == NULL || str == NULL)
+	if (str == NULL)
+	{
+		for (int i = 0; old_str[i].chars[0] != L'\0'; i++)
+			mvwadd_wch(win, y, x + i, old_str + i);
+
+		return old_str;
+	}
+	if (win == NULL)
 	{
 		free(old_str);
 		return NULL;
@@ -135,9 +142,19 @@ int main(int argc, char** argv)
 	    switch (c)
 	    {
 		    // for all of the possible combo starts
+		    #define CS_W 1
 		    case 'W':
-			    ben_win_mvwaddwstr(win, rows - 1, 1, L"ALT ");
-			    cs = c;
+			    if (cs & CS_W) break;
+
+			    if (cs)
+			    {
+				    ben_win_mvwaddwstr(win, rows - 1, 1, NULL);
+				    cs = 0;
+			    }
+			    wattron(win, A_REVERSE);
+			    ben_win_mvwaddwstr(win, rows - 1, 1, L" ALT ");
+			    wattroff(win, A_REVERSE);
+			    cs ^= CS_W;
 			    break;
 
 		    // for all of the possible combo ends
@@ -148,18 +165,14 @@ int main(int argc, char** argv)
 		    case 'r':
 		    case 'd':
 			    /*
-			     So what I need to do now is make it  
-			     possible to terminate a combo with an
-			     end character by storing the result of
-			     the ben_win_mvwaddwstr() to a cchar_t
-			     buffer.
-
-			     Maybe if I supply an empty string it
-			     should write using the static buffer
-			     by default.
+			     * Next step is to make opening and closing window
+			     * functionality.  Actually,  you  should exit the
+			     * program  simply  by  closing all windows.  That
+			     * makes  the  most  sense  to  me.
 			     */
-
+			    ben_win_mvwaddwstr(win, rows - 1, 1, NULL);
 			    ce = c;
+			    cs = 0;
 			    break;
 	    }
 
