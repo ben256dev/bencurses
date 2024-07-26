@@ -44,6 +44,8 @@ typedef uint8_t ben_win_type;
 #define BEN_WIN_TYPE_LEAF  1
 #define BEN_WIN_TYPE_LEFT  2
 #define BEN_WIN_TYPE_RIGHT 3
+#define BEN_WIN_TYPE_VERT  4
+#define BEN_WIN_TYPE_HORZ  5
 
 // @ben win
 typedef struct ben_win
@@ -117,28 +119,25 @@ int main(int argc, char** argv)
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
-    ben_win* windows = malloc(sizeof(ben_win));
+    size_t node_count = 2;
+    ben_win* windows = malloc(sizeof(ben_win) * node_count);
 
     windows[0].window = NULL;
     windows[0].first = 1;
     windows[0].second = BEN_WIN_TYPE_NULL;
     windows[0].type = BEN_WIN_TYPE_NULL;
 
-    windows[1].window = NULL;
+    windows[1].window = newwin(rows, cols, 0, 0);
     windows[1].first = BEN_WIN_TYPE_NULL;
     windows[1].second = BEN_WIN_TYPE_NULL;
     windows[1].type = BEN_WIN_TYPE_NULL;
 
-    WINDOW* win = newwin(rows, cols, 0, 0);
-    windows[1].window = win;
-
+    WINDOW* win = windows[1].window;
     box(win, 0, 0);
     wrefresh(win);
 
     curs_set(0);
 
-    int cs = 0;
-    int ce = 0;
     int c;
     while ((c = mvwgetch(win, 0, 0)) != 'q')
     {
@@ -149,6 +148,10 @@ int main(int argc, char** argv)
 		    // for all of the possible combo starts
 		    #define CS_W 1
 		    case 'W':
+			    wattron(win, A_BLINK);
+			    box(win, 0, 0);
+			    wattroff(win, A_BLINK);
+
 			    wattron(win, A_REVERSE);
 			    ben_win_mvwaddwstr(win, rows - 1, 1, L" W ");
 			    wattroff(win, A_REVERSE);
@@ -174,15 +177,39 @@ int main(int argc, char** argv)
 			     * binary  tree  data   structure   and  the window
 			     * functionality.
 			     */
+			    node_count++;
+			    ben_win* new_alloc = malloc(sizeof(ben_win) * node_count);
+			    memcpy(new_alloc, windows, sizeof(ben_win) * (node_count - 1));
+			    windows = new_alloc;
+
+			    int par_win_i = 0;
+			    int cur_win_i = 1;
+			    int new_win_i = node_count - 1;
+			    windows[par_win_i].type   = BEN_WIN_TYPE_VERT;
+			    windows[par_win_i].second = new_win_i;
+
+			    int p_rows, p_cols;
+			    getmaxyx(win, p_rows, p_cols);
+			    windows[new_win_i].window = newwin(p_rows, p_cols / 2, 0, p_cols / 2);
+			    windows[new_win_i].type   = BEN_WIN_TYPE_LEAF;
+			    windows[new_win_i].first  = BEN_WIN_TYPE_NULL;
+			    windows[new_win_i].second = BEN_WIN_TYPE_NULL;
+
+			    wresize(win, p_rows, p_cols / 2);
+
 			    box(win, 0, 0);
-			    ce = c;
-			    cs = 0;
+			    box(windows[new_win_i].window, 0, 0);
+
 			    break;
 	    }
 
 	    // if (asking for verification) switch () case 'y': verify(); //
 
-	    wrefresh(win);
+	    for (int i = 0; i < node_count; i++)
+	    {
+		    if (windows[i].window)
+			    wrefresh(windows[i].window);
+	    }
     }
 
     delwin(win);
