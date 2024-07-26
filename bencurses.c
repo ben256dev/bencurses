@@ -190,12 +190,14 @@ int main(int argc, char** argv)
 
 			    int p_rows, p_cols;
 			    getmaxyx(win, p_rows, p_cols);
-			    windows[new_win_i].window = newwin(p_rows, p_cols / 2, 0, p_cols / 2);
+			    int p_cols_left = p_cols / 2;
+			    int p_cols_right = p_cols - p_cols_left;
+			    windows[new_win_i].window = newwin(p_rows, p_cols_right, 0, p_cols_left );
 			    windows[new_win_i].type   = BEN_WIN_TYPE_LEAF;
 			    windows[new_win_i].first  = BEN_WIN_TYPE_NULL;
 			    windows[new_win_i].second = BEN_WIN_TYPE_NULL;
 
-			    wresize(win, p_rows, p_cols / 2);
+			    wresize(win, p_rows, p_cols_left);
 
 			    box(win, 0, 0);
 			    box(windows[new_win_i].window, 0, 0);
