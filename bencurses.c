@@ -33,6 +33,49 @@
 ├────┬──┴┬──┴──┬┴───┴───┴───┴───┴───┴──┬┴───┴┬──┴──┬─────┤
 │Ctrl│Mod│ Alt │                       │ Alt │     │ Ctrl│
 └────┴───┴─────┴───────────────────────┴─────┴─────┴─────┘
+     │
+     I
+    ╱ ╲
+   1   2
+  ╱│   │╲
+┌────────────────────────────────────────────────────────┐
+│             │              │              │            │
+│             │       f      │              │      k     │
+│             │              │              │            │
+│      a      │              │      i       │            │
+│             │───────H──────│              │──────L─────│
+│             │              │              │            │
+│             │              │              │            │
+│──────C──────│       g      │───────J──────│      l     │
+│      │  c   B              A              I            │
+│  b   │──F───│              │              │            │
+│      E      │──────G───────│              │──────K─────│
+│      │  d   │              │              │   m  │   o │
+│──────D──────│              │      j       │      │     │
+│             │      h       │              │──N───│──O──│
+│      e      │              │              │   n  M   p │
+│             │              │              │      │     │
+└────────────────────────────────────────────────────────┘
+           A
+       ╱       ╲    
+      B         I
+   ╱    ╲     ╱   ╲      
+  C      G   J     K
+ ╱ ╲    ╱ ╲ ╱ ╲
+a   E    H h i j L     M
+   b F  f g     k l N   O
+    c d            m n o p
+    
+  1   1   1   2   2   3   3   4   4   5   5   6   6   7   7   8   8   9   9   10  10  11  11  12  12  13  13  14  14
+
+  1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29 
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│ A │ B │ I │ C │ G │ J │ K │ a │ E │ H │ h │ i │ j │ L │ M │ b │ F │ f │ g │ k │ l │ N │ O │ c │ d │ m │ n │ o │ p │
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+  1   2   2   4   4   4   4   4   5   5   5   6   7   8   8   3   4   5   6   6   7   8   8   0   1   2   3   4   5  
+
+  Theres a big problem with how I've approached this issue which is that a non-complete binary search tree doesn't
+  have the same indexing characteristics as complete trees where getting parent's and stuff like that is simple.
 */
 
 // @key typedef
@@ -158,24 +201,19 @@ int main(int argc, char** argv)
 			    break;
 
 		    // for all of the possible combo ends
-		    case 'h':
-		    case 'j':
-		    case 'k':
-		    case 'l':
-		    case 'r':
 		    case 'd':
+			    break;
+		    case 'l':
 			    /*
 			     * Next step is to make opening and closing window
 			     * functionality.  Actually,  you  should exit the
 			     * program  simply  by  closing all windows.  That
 			     * makes  the  most  sense  to  me.
 			     *
-			     * Jesus,  I spent a  lot of  time  trying to  make
-			     * reading from the screen work. I don't understand
-			     * what makes  that shit impossible. Anyways,  it's
-			     * not  necessary.  Now  I can focus on the actuall
-			     * binary  tree  data   structure   and  the window
-			     * functionality.
+			     * I need  to be able  to print the  window binary
+			     * tree with a single function. I shouldn't do any
+			     * of this stuff  where I  draw  the  windows   in
+			     * different  places.
 			     */
 			    node_count++;
 			    ben_win* new_alloc = malloc(sizeof(ben_win) * node_count);
@@ -198,11 +236,13 @@ int main(int argc, char** argv)
 			    windows[new_win_i].second = BEN_WIN_TYPE_NULL;
 
 			    wresize(win, p_rows, p_cols_left);
-
-			    box(win, 0, 0);
 			    box(windows[new_win_i].window, 0, 0);
-
-			    break;
+		    case 'h':
+		    case 'j':
+		    case 'k':
+		    case 'r':
+		    default:
+			    box(win, 0, 0);
 	    }
 
 	    // if (asking for verification) switch () case 'y': verify(); //
