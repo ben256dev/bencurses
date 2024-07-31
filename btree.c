@@ -43,7 +43,12 @@ int main(void)
 				if (btree[lc] == 0 || btree[rc] == 0)
 				{
 					assert(btree[lc] == btree[rc] == 0);
+					//disallow adding to the final layer.
+
+					btree[lc] = btree[cur];
 					btree[cur] = BNODE_CENTER_BITS;
+					btree[rc] = 1u;
+					cur = lc;
 				}
 				else
 				{
@@ -51,6 +56,17 @@ int main(void)
 					 * Got to figure out how to move a subtree
 					 * so that I  can make an  addition  above
 					 * the  current  node  in  this  case.
+					 *
+					 * This requires taking the child tree of
+					 * the node we  want to  insert above and
+					 * moving every layer down one  layer. If
+					 * the  child  tree  reaches  to the  8th
+					 * layer   then   the  user   should   be
+					 * prevented from  adding above the node.
+					 *
+					 * Until I write the code to traverse the
+					 * child tree, I can' t really write this
+					 * else  block.
 					 */
 				}
 				
