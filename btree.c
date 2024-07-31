@@ -5,9 +5,8 @@
 
 typedef uint8_t bnode;
 #define BNODE_IS_HORZIZONTAL_BIT                     1u << 7
-#define BNODE_IS_MINIMIZED_BIT                       1u << 6
-#define BNODE_FRACTION_BITS      BNODE_IS_MINIMIZED_BIT - 1u
-#define BNODE_CENTER_BITS        BNODE_IS_MINIMIZED_BIT >> 1
+#define BNODE_FRACTION_BITS      BNODE_IS_HORIZONTAL_BIT - 1u
+#define BNODE_CENTER_BITS        BNODE_IS_HORIZONTAL_BIT >> 1
 
 int main(void)
 {
@@ -67,6 +66,20 @@ int main(void)
 					 * Until I write the code to traverse the
 					 * child tree, I can' t really write this
 					 * else  block.
+					 *
+					 * I don't think window properties should
+					 * be stored in nodes so I will have to
+					 * allocate separate data for the state
+					 * of windows such as whether they are
+					 * minimized or their contents. This is
+					 * because nodes are not necessarily
+					 * windows.
+					 *
+					 * There may be a possibility to optimize
+					 * the memory usage in the future by
+					 * storing only subtrees but for now lets
+					 * make the leaf a fixed array of size 64
+					 * and the node tree of size 255
 					 */
 				}
 				
