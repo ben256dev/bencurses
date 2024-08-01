@@ -4,9 +4,18 @@
 #include <assert.h>
 
 typedef uint8_t bnode;
-#define BNODE_IS_HORZIZONTAL_BIT                     1u << 7
+#define BNODE_IS_HORIZONTAL_BIT                       1u << 7
 #define BNODE_FRACTION_BITS      BNODE_IS_HORIZONTAL_BIT - 1u
 #define BNODE_CENTER_BITS        BNODE_IS_HORIZONTAL_BIT >> 1
+
+typedef uint8_t bwin_flags;
+#define BNODE_IS_DIRTY_BIT 1u << 7
+typedef struct bwin
+{
+	WINDOW* wptr;
+	bwin_flags flags;
+	uint8_t node_id;
+} bwin;
 
 int main(void)
 {
@@ -18,27 +27,35 @@ int main(void)
     	int rows, cols;
     	getmaxyx(stdscr, rows, cols);
 
-	WINDOW* win = newwin(rows, cols, 0, 0);
-	box(win, 0, 0);
+	int bwins_count = 0;
+	bwin bwins[64];
+	for (int i = 0; i < 64; i++)
+		bwins[i].flags = BNODE_IS_DIRTY_BIT;
+	bwins[0].wptr = newwin(rows, cols, 0, 0);
+	bwins[0].flags = 0;
+	bwins[0].node_id = 1;
+	box(bwins[0].wptr, 0, 0);
+	bwins_count++;
 
-	bnode btree[255];
-	memset(btree, 0, 255);
-	btree - 1;
+	bnode btree_allocation[255];
+	memset(btree_allocation, 0, 255);
+	bnode* btree = &btree_allocation[0] - 1;
 
 	btree[1] = 1u;
 
 	uint8_t cur = 1;
 
-	wrefresh(win);
+	wrefresh(bwins[0].wptr);
 
 	int c = 0;
-	while (c = wgetch(win) != 'q')
+	while (c = wgetch(bwins[0].wptr) != 'q')
 	{
 		int lc = cur << 1;
 		int rc = cur << 1 + 1;
 		switch (c)
 		{
 			case 'l':
+				/* this block is apparently impossible to reach */
 				if (btree[lc] == 0 || btree[rc] == 0)
 				{
 					assert(btree[lc] == btree[rc] == 0);
@@ -89,3 +106,7 @@ int main(void)
 
 	endwin();
 }
+/*
+ * Remap space to be ctrl outside of insert mode
+ * mallocs need free!
+ */
