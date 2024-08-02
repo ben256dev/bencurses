@@ -1,4 +1,6 @@
+#define _XOPEN_SOURCE 700
 #include <curses.h>
+#include <locale.h>
 #include <stdint.h>
 #include <memory.h>
 #include <assert.h>
@@ -20,9 +22,10 @@ typedef struct bwin
 int main(void)
 {
 	initscr();
-	cbreak();
+	setlocale(LC_ALL, "");
     	noecho();
     	keypad(stdscr, TRUE);
+	raw();
 
     	int rows, cols;
     	getmaxyx(stdscr, rows, cols);
@@ -45,17 +48,15 @@ int main(void)
 
 	uint8_t cur = 1;
 
-	wrefresh(bwins[0].wptr);
-
-	int c = 0;
-	while (c = wgetch(bwins[0].wptr) != 'q')
+	int c;
+	while ((c = wgetch(bwins[0].wptr)) != 'q')
 	{
+
 		int lc = cur << 1;
 		int rc = cur << 1 + 1;
 		switch (c)
 		{
 			case 'l':
-				/* this block is apparently impossible to reach */
 				if (btree[lc] == 0 || btree[rc] == 0)
 				{
 					assert(btree[lc] == btree[rc] == 0);
@@ -97,9 +98,15 @@ int main(void)
 					 * storing only subtrees but for now lets
 					 * make the leaf a fixed array of size 64
 					 * and the node tree of size 255
+					 *
+					 * I was missing parenthesis so the whole
+					 * while loop was bugged.
 					 */
 				}
-				
+				break;
+			default:
+				//waddwstr(bwins[0].wptr, L" 몬 ");
+				waddch(bwins[0].wptr, c);
 				break;
 		}
 	}
