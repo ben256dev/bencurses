@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+
 #include <curses.h>
 #include <locale.h>
 #include <stdint.h>
@@ -32,12 +33,18 @@ int main(void)
 
 	int bwins_count = 0;
 	bwin bwins[64];
+	memset(bwins, 0, 64);
 	for (int i = 0; i < 64; i++)
 		bwins[i].flags = BNODE_IS_DIRTY_BIT;
+
 	bwins[0].wptr = newwin(rows, cols, 0, 0);
 	bwins[0].flags = 0;
 	bwins[0].node_id = 1;
 	box(bwins[0].wptr, 0, 0);
+	/* maybe an ncurses application should draw prior to input?
+	 * so then don't draw the box here but rather draw all of
+	 * the window's boxes generically later.
+	 */
 	bwins_count++;
 
 	bnode btree_allocation[255];
@@ -60,11 +67,32 @@ int main(void)
 				if (btree[lc] == 0 || btree[rc] == 0)
 				{
 					assert(btree[rc] == 0);
-					//disallow adding to the final layer.
+					// disallow adding to the final layer.
 
 					btree[lc] = btree[cur];
 					btree[cur] = BNODE_CENTER_BITS;
 					btree[rc] = 1u;
+
+					/* Here we make a new window filling the
+					 * entire screen, but we know that
+					 * necessarily the window won't take up
+					 * the whole screen, so we will resize it
+					 * anyways, but at least for now the window
+					 * exists.
+					 */
+					bwins[bwins_count].wptr = newwin(rows, cols, 0, 0);
+					bwins[bwins_count].flags = BNODE_IS_DIRTY_BIT;
+					bwins[bwins_count].node_id = rc;
+
+					for (int i = 0; i < 64; i++)
+					{
+						if (bwins[i].node_id == cur)
+						{
+							bwins[i].node_id = lc;
+							break;
+						}
+					}
+
 					cur = lc;
 				}
 				else
@@ -85,22 +113,43 @@ int main(void)
 					 * child tree, I can' t really write this
 					 * else  block.
 					 *
-					 * I don't think window properties should
-					 * be stored in nodes so I will have to
-					 * allocate separate data for the state
-					 * of windows such as whether they are
-					 * minimized or their contents. This is
-					 * because nodes are not necessarily
-					 * windows.
-					 *
 					 * There may be a possibility to optimize
-					 * the memory usage in the future by
+					 * the  memory  usage  in  the future  by
 					 * storing only subtrees but for now lets
 					 * make the leaf a fixed array of size 64
-					 * and the node tree of size 255
+					 * and  the  node  tree  of  size  255
+					 *
+					 * The  next  step is  drawing  the  damn
+					 * tree. After that, I need to extend the
+					 * functionality to  allow all  kinds  of
+					 * insertions  and  deletions  and
+					 * minimizations.
+					 *
+					 * At a  base, the tree  is  first drawn,
+					 * then it is necessary  to keep track of
+					 * the dirty state of a window and update
+					 * it to make  it dirty whenever an event
+					 * involving that window  is  registered.
+					 * This would be minimization,  deletion,
+					 * rescaling, window swapping, and screen
+					 * resize.
 					 */
 				}
 				break;
+		}
+
+		// traverse the tree here
+
+		for (int i = 0; i < 64; i++)
+		{
+			if (bwins[i].wptr == NULL)
+				break;
+
+			if (bwins[i].flags & BNODE_IS_DIRTY_BIT)
+			{
+				box(bwins[i].wptr, 0, 0);
+				wrefresh(bwins[i].wptr);
+			}
 		}
 	}
 
