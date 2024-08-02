@@ -22,10 +22,10 @@ typedef struct bwin
 int main(void)
 {
 	initscr();
+	cbreak();
 	setlocale(LC_ALL, "");
     	noecho();
     	keypad(stdscr, TRUE);
-	raw();
 
     	int rows, cols;
     	getmaxyx(stdscr, rows, cols);
@@ -59,7 +59,7 @@ int main(void)
 			case 'l':
 				if (btree[lc] == 0 || btree[rc] == 0)
 				{
-					assert(btree[lc] == btree[rc] == 0);
+					assert(btree[rc] == 0);
 					//disallow adding to the final layer.
 
 					btree[lc] = btree[cur];
@@ -98,15 +98,8 @@ int main(void)
 					 * storing only subtrees but for now lets
 					 * make the leaf a fixed array of size 64
 					 * and the node tree of size 255
-					 *
-					 * I was missing parenthesis so the whole
-					 * while loop was bugged.
 					 */
 				}
-				break;
-			default:
-				//waddwstr(bwins[0].wptr, L" 몬 ");
-				waddch(bwins[0].wptr, c);
 				break;
 		}
 	}
@@ -114,6 +107,5 @@ int main(void)
 	endwin();
 }
 /*
- * Remap space to be ctrl outside of insert mode
  * mallocs need free!
  */
