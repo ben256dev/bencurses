@@ -24,23 +24,7 @@ typedef uint8_t bwin;
 #define PARENT(x)     x >> 1
 #define CHILD(x)      x << 1
 
-typedef struct bregion
-{
-	int rows, cols;
-} bregion;
-
 int rows, cols;
-bregion region;
-
-/*
-void node_size_eval(bnode node)
-{
-	switch 
-	{
-		case IS_SISTER()
-	}
-}
-*/
 
 int main(void)
 {
@@ -57,16 +41,27 @@ int main(void)
 	bwin*    flag_array = (bwin*)    (node_array + 255 * sizeof(bnode));
 	WINDOW** nwin_array = (WINDOW**) (flag_array + 255 * sizeof(bwin));
 
-	uint8_t cur = 1;
-	node_array[cur] = BNODE_WINDOW;
-	flag_array[cur] = BNODE_IS_DIRTY_BIT;
-	nwin_array[cur] = newwin(rows, cols, 0, 0);
-	box(nwin_array[cur], 0, 0);
+	uint8_t cur;
+	node_array[1] = BNODE_FRACTION_BITS;
+	node_array[2] = BNODE_WINDOW;
+	flag_array[2] = BNODE_IS_DIRTY_BIT;
+	nwin_array[2] = newwin(rows, cols/2, 0, 0);
+	box(nwin_array[2], 0, 0);
+	node_array[3] = BNODE_WINDOW;
+	flag_array[3] = BNODE_IS_DIRTY_BIT;
+	nwin_array[3] = newwin(rows, cols - (cols/2), 0, cols/2);
+	box(nwin_array[3], 0, 0);
 
 	int c;
-	while ( ( c = wgetch(nwin_array[1]) ) != 'q')
+	while ( ( c = wgetch(nwin_array[2]) ) != 'q')
 	{
-		uint8_t n = 1;
+		if (node_array[1] == BNODE_WINDOW && flag_array[1] | BNODE_IS_DIRTY_BIT)
+		{
+			wrefresh(nwin_array[1]);
+			goto FINISH_TREE;
+		}
+
+		uint8_t n = 2;
 TRAVERSE_TREE:
 		if (n == 1 && node_array[n] & BNODE_VISITATION_BIT)
 		{
@@ -103,7 +98,6 @@ TRAVERSE_TREE:
 				n = CHILD(n);
 
 		}
-		printf("%u\n", n);
 		goto TRAVERSE_TREE;
 FINISH_TREE:
 		switch (c)
