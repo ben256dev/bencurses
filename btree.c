@@ -7,11 +7,11 @@
 #include <assert.h>
 
 typedef uint8_t bnode;
-#define BNODE_IS_HORIZONTAL_BIT                   128
-#define BNODE_VISITATION_BIT                      64
-#define BNODE_WINDOW                                   1
-#define BNODE_FRACTION_BITS  63
-#define BNODE_CENTER_BITS    31
+#define BNODE_IS_HORIZONTAL_BIT 128
+#define BNODE_VISITATION_BIT     64
+#define BNODE_WINDOW              1
+#define BNODE_FRACTION_BITS      63
+#define BNODE_CENTER_BITS        31
 
 typedef uint8_t bwin;
 #define BNODE_IS_DIRTY_BIT 1 << 7
@@ -26,6 +26,56 @@ typedef uint8_t bwin;
 
 int rows, cols;
 
+typedef struct wtree
+{
+	bnode   node[255];
+	bwin    flag[255];
+	WINDOW* nwin[255];
+} wtree;
+
+typedef struct region
+{
+	int r;
+	int c;
+} region;
+
+region get_child_region(const wtree* tree, region reg, uint8_t child_n)
+{
+	if (child_n < 2)
+		return reg;
+
+	int bin_stack_len = 7;
+	for (;(child_n & 128) == 0; bin_stack_len--) 
+		child_n <<= 1;
+	child_n <<= 1;
+
+	uint8_t n = 1;
+	region prev_reg;
+	for (int i = 0; i < bin_stack_len; i++)
+	{
+		if (tree->node[n] == BNODE_WINDOW)
+			return prev_reg;
+
+		prev_reg = reg;
+		if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
+			reg.r = reg.r * (tree->node[n] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
+		else
+			reg.c = reg.c * (tree->node[n] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
+
+		n <<= 1;
+		if (child_n & 128)
+		{
+			n++;
+
+			if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
+				reg.r = prev_reg.r - reg.r;
+			else
+				reg.c = prev_reg.c - reg.c;
+		}
+		child_n <<= 1;
+	}
+}
+
 int main(void)
 {
 	initscr();
@@ -35,11 +85,9 @@ int main(void)
     	keypad(stdscr, TRUE);
 
     	getmaxyx(stdscr, rows, cols);
+	region scr_reg = { rows, cols };
 
-	void* bencurses_alloc_ptr = calloc( 255, (sizeof(WINDOW*) + sizeof(bnode) + sizeof(bwin)) );
-	bnode*   node_array = (bnode*)    bencurses_alloc_ptr;
-	bwin*    flag_array = (bwin*)    (node_array + 255 * sizeof(bnode));
-	WINDOW** nwin_array = (WINDOW**) (flag_array + 255 * sizeof(bwin));
+	wtree tree;
 
 	uint8_t cur;
 	int cur_pos_y = 0;
@@ -48,60 +96,61 @@ int main(void)
 	int cur_cols = cols;
 	int old_cols = cur_cols;
 	int old_rows = cur_rows;
-	node_array[1] = BNODE_CENTER_BITS;
-	cur_cols = cur_cols * BNODE_CENTER_BITS / BNODE_FRACTION_BITS;
-	node_array[2] = BNODE_WINDOW;
-	flag_array[2] = BNODE_IS_DIRTY_BIT;
-	nwin_array[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
-	box(nwin_array[2], 0, 0);
+	tree.node[1] = BNODE_CENTER_BITS/2;
+	int gcr = get_child_region(&tree, scr_reg, 2).c;
+	cur_cols = cur_cols * (tree.node[1] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
+	tree.node[2] = BNODE_WINDOW;
+	tree.flag[2] = BNODE_IS_DIRTY_BIT;
+	tree.nwin[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
+	box(tree.nwin[2], 0, 0);
 	cur_pos_x = cur_cols;
 	cur_cols = old_cols - cur_pos_x;
-	node_array[3] = BNODE_WINDOW;
-	flag_array[3] = BNODE_IS_DIRTY_BIT;
-	nwin_array[3] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
-	box(nwin_array[3], 0, 0);
+	tree.node[3] = BNODE_WINDOW;
+	tree.flag[3] = BNODE_IS_DIRTY_BIT;
+	tree.nwin[3] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
+	box(tree.nwin[3], 0, 0);
 
 	int c;
 	do
 	{
-		if (node_array[1] == BNODE_WINDOW && flag_array[1] | BNODE_IS_DIRTY_BIT)
+		if (tree.node[1] == BNODE_WINDOW && tree.flag[1] | BNODE_IS_DIRTY_BIT)
 		{
-			wrefresh(nwin_array[1]);
+			wrefresh(tree.nwin[1]);
 			goto FINISH_TREE;
 		}
 
 		uint8_t n = 2;
 TRAVERSE_TREE:
-		if (n == 1 && node_array[n] & BNODE_VISITATION_BIT)
+		if (n == 1 && tree.node[n] & BNODE_VISITATION_BIT)
 		{
-			node_array[n] ^= BNODE_VISITATION_BIT;
+			tree.node[n] ^= BNODE_VISITATION_BIT;
 			goto FINISH_TREE;
 		}
 		
-		if (node_array[n] == BNODE_WINDOW)
+		if (tree.node[n] == BNODE_WINDOW)
 		{
-			if (flag_array[n] | BNODE_IS_DIRTY_BIT)
+			if (tree.flag[n] | BNODE_IS_DIRTY_BIT)
 			{
-				wrefresh(nwin_array[n]);
-				flag_array[n] ^ BNODE_IS_DIRTY_BIT;
+				wrefresh(tree.nwin[n]);
+				tree.flag[n] ^ BNODE_IS_DIRTY_BIT;
 			}
 
-			node_array[n] |= BNODE_VISITATION_BIT;
+			tree.node[n] |= BNODE_VISITATION_BIT;
 		}
 
 		if (IS_SISTER(n))
 		{
-			if (node_array[n] & BNODE_VISITATION_BIT && node_array[n-1] & BNODE_VISITATION_BIT)
+			if (tree.node[n] & BNODE_VISITATION_BIT && tree.node[n-1] & BNODE_VISITATION_BIT)
 			{
-				node_array[n]         ^= BNODE_VISITATION_BIT;
-				node_array[n-1]       ^= BNODE_VISITATION_BIT;
-				node_array[PARENT(n)] |= BNODE_VISITATION_BIT;
+				tree.node[n]         ^= BNODE_VISITATION_BIT;
+				tree.node[n-1]       ^= BNODE_VISITATION_BIT;
+				tree.node[PARENT(n)] |= BNODE_VISITATION_BIT;
 				n = PARENT(n);
 			}
 		}
 		else
 		{
-			if (node_array[n] & BNODE_VISITATION_BIT)
+			if (tree.node[n] & BNODE_VISITATION_BIT)
 				n = SIBLING(n);
 			else
 				n = CHILD(n);
@@ -113,9 +162,8 @@ FINISH_TREE:
 		{
 			case 'l':
 		}
-	} while ( ( c = wgetch(nwin_array[2]) ) != 'q');
+	} while ( ( c = wgetch(tree.nwin[2]) ) != 'q');
 
 	endwin();
-	free(bencurses_alloc_ptr);
 	return 0;
 }
