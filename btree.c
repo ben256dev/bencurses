@@ -7,11 +7,11 @@
 #include <assert.h>
 
 typedef uint8_t bnode;
-#define BNODE_IS_HORIZONTAL_BIT                   1 << 7
-#define BNODE_VISITATION_BIT                      1 << 6
+#define BNODE_IS_HORIZONTAL_BIT                   128
+#define BNODE_VISITATION_BIT                      64
 #define BNODE_WINDOW                                   1
-#define BNODE_FRACTION_BITS     BNODE_VISITATION_BIT - 1
-#define BNODE_CENTER_BITS       BNODE_FRACTION_BITS >> 1
+#define BNODE_FRACTION_BITS  63
+#define BNODE_CENTER_BITS    31
 
 typedef uint8_t bwin;
 #define BNODE_IS_DIRTY_BIT 1 << 7
@@ -42,14 +42,23 @@ int main(void)
 	WINDOW** nwin_array = (WINDOW**) (flag_array + 255 * sizeof(bwin));
 
 	uint8_t cur;
-	node_array[1] = BNODE_FRACTION_BITS;
+	int cur_pos_y = 0;
+	int cur_pos_x = 0;
+	int cur_rows = rows;
+	int cur_cols = cols;
+	int old_cols = cur_cols;
+	int old_rows = cur_rows;
+	node_array[1] = BNODE_CENTER_BITS;
+	cur_cols = cur_cols * BNODE_CENTER_BITS / BNODE_FRACTION_BITS;
 	node_array[2] = BNODE_WINDOW;
 	flag_array[2] = BNODE_IS_DIRTY_BIT;
-	nwin_array[2] = newwin(rows, cols/2, 0, 0);
+	nwin_array[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
 	box(nwin_array[2], 0, 0);
+	cur_pos_x = cur_cols;
+	cur_cols = old_cols - cur_pos_x;
 	node_array[3] = BNODE_WINDOW;
 	flag_array[3] = BNODE_IS_DIRTY_BIT;
-	nwin_array[3] = newwin(rows, cols - (cols/2), 0, cols/2);
+	nwin_array[3] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
 	box(nwin_array[3], 0, 0);
 
 	int c;
