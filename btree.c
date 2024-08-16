@@ -53,7 +53,7 @@ int main(void)
 	box(nwin_array[3], 0, 0);
 
 	int c;
-	while ( ( c = wgetch(nwin_array[2]) ) != 'q')
+	do
 	{
 		if (node_array[1] == BNODE_WINDOW && flag_array[1] | BNODE_IS_DIRTY_BIT)
 		{
@@ -104,7 +104,7 @@ FINISH_TREE:
 		{
 			case 'l':
 		}
-	}
+	} while ( ( c = wgetch(nwin_array[2]) ) != 'q');
 
 	endwin();
 	free(bencurses_alloc_ptr);
