@@ -74,6 +74,8 @@ region get_child_region(const wtree* tree, region reg, uint8_t child_n)
 		}
 		child_n <<= 1;
 	}
+
+	return reg;
 }
 
 int main(void)
@@ -97,8 +99,7 @@ int main(void)
 	int old_cols = cur_cols;
 	int old_rows = cur_rows;
 	tree.node[1] = BNODE_CENTER_BITS/2;
-	int gcr = get_child_region(&tree, scr_reg, 2).c;
-	cur_cols = cur_cols * (tree.node[1] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
+	cur_cols = get_child_region(&tree, scr_reg, 2).c;
 	tree.node[2] = BNODE_WINDOW;
 	tree.flag[2] = BNODE_IS_DIRTY_BIT;
 	tree.nwin[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
