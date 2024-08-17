@@ -104,8 +104,8 @@ int main(void)
 	tree.flag[2] = BNODE_IS_DIRTY_BIT;
 	tree.nwin[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
 	box(tree.nwin[2], 0, 0);
-	cur_pos_x = cur_cols;
-	cur_cols = old_cols - cur_pos_x;
+	cur_pos_x = cur_cols;// regions should also have positions y, x
+	cur_cols = get_child_region(&tree, scr_reg, 3).c;
 	tree.node[3] = BNODE_WINDOW;
 	tree.flag[3] = BNODE_IS_DIRTY_BIT;
 	tree.nwin[3] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
