@@ -37,6 +37,8 @@ typedef struct region
 {
 	int r;
 	int c;
+	int y;
+	int x;
 } region;
 
 region get_child_region(const wtree* tree, region reg, uint8_t child_n)
@@ -68,9 +70,15 @@ region get_child_region(const wtree* tree, region reg, uint8_t child_n)
 			n++;
 
 			if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
+			{
+				reg.y = reg.r;
 				reg.r = prev_reg.r - reg.r;
+			}
 			else
+			{
+				reg.x = reg.c;
 				reg.c = prev_reg.c - reg.c;
+			}
 		}
 		child_n <<= 1;
 	}
@@ -87,28 +95,22 @@ int main(void)
     	keypad(stdscr, TRUE);
 
     	getmaxyx(stdscr, rows, cols);
-	region scr_reg = { rows, cols };
+	region scr_reg = { rows, cols, 0, 0 };
 
 	wtree tree;
 
 	uint8_t cur;
-	int cur_pos_y = 0;
-	int cur_pos_x = 0;
-	int cur_rows = rows;
-	int cur_cols = cols;
-	int old_cols = cur_cols;
-	int old_rows = cur_rows;
+	region child_region;
 	tree.node[1] = BNODE_CENTER_BITS/2;
-	cur_cols = get_child_region(&tree, scr_reg, 2).c;
+	child_region = get_child_region(&tree, scr_reg, 2);
 	tree.node[2] = BNODE_WINDOW;
 	tree.flag[2] = BNODE_IS_DIRTY_BIT;
-	tree.nwin[2] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
+	tree.nwin[2] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[2], 0, 0);
-	cur_pos_x = cur_cols;// regions should also have positions y, x
-	cur_cols = get_child_region(&tree, scr_reg, 3).c;
+	child_region = get_child_region(&tree, scr_reg, 3);
 	tree.node[3] = BNODE_WINDOW;
 	tree.flag[3] = BNODE_IS_DIRTY_BIT;
-	tree.nwin[3] = newwin(cur_rows, cur_cols, cur_pos_y, cur_pos_x);
+	tree.nwin[3] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[3], 0, 0);
 
 	int c;
