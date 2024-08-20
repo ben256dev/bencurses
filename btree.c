@@ -76,9 +76,11 @@ region get_child_region(const wtree* tree, region reg, uint8_t child_n)
 				reg.x = reg.c;
 				reg.c = prev_reg.c - reg.c;
 			}
+			n <<= 1;
 			n++;
 		}
-		n <<= 1;
+		else
+			n <<= 1;
 		child_n <<= 1;
 	}
 
@@ -104,14 +106,19 @@ int main(void)
 
 	tree.node[2] = BNODE_CENTER_BITS | BNODE_IS_HORIZONTAL_BIT;
 
-	tree.node[3] = BNODE_WINDOW;
-	tree.flag[3] = BNODE_IS_DIRTY_BIT;
+	tree.node[3] = BNODE_CENTER_BITS | BNODE_IS_HORIZONTAL_BIT;
 
 	tree.node[4] = BNODE_WINDOW;
 	tree.flag[4] = BNODE_IS_DIRTY_BIT;
 
 	tree.node[5] = BNODE_WINDOW;
 	tree.flag[5] = BNODE_IS_DIRTY_BIT;
+
+	tree.node[6] = BNODE_WINDOW;
+	tree.flag[6] = BNODE_IS_DIRTY_BIT;
+
+	tree.node[7] = BNODE_WINDOW;
+	tree.flag[7] = BNODE_IS_DIRTY_BIT;
 
 	child_region = get_child_region(&tree, scr_reg, 3);
 	tree.nwin[3] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
@@ -121,9 +128,17 @@ int main(void)
 	tree.nwin[4] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[4], 0, 0);
 
-	child_region = get_child_region(&tree, scr_reg, 5);// bad
+	child_region = get_child_region(&tree, scr_reg, 5);
 	tree.nwin[5] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[5], 0, 0);
+
+	child_region = get_child_region(&tree, scr_reg, 6);
+	tree.nwin[6] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
+	box(tree.nwin[6], 0, 0);
+
+	child_region = get_child_region(&tree, scr_reg, 7);
+	tree.nwin[7] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
+	box(tree.nwin[7], 0, 0);
 
 	int c;
 	do
@@ -162,6 +177,8 @@ TRAVERSE_TREE:
 				tree.node[PARENT(n)] |= BNODE_VISITATION_BIT;
 				n = PARENT(n);
 			}
+			else
+				n = CHILD(n);
 		}
 		else
 		{
@@ -177,7 +194,7 @@ FINISH_TREE:
 		{
 			case 'l':
 		}
-	} while ( ( c = wgetch(tree.nwin[3]) ) != 'q');
+	} while ( ( c = wgetch(tree.nwin[4]) ) != 'q');
 
 	endwin();
 	return 0;
