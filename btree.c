@@ -64,11 +64,8 @@ region get_child_region(const wtree* tree, region reg, uint8_t child_n)
 		else
 			reg.c = reg.c * (tree->node[n] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
 
-		n <<= 1;
 		if (child_n & 128)
 		{
-			n++;
-
 			if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
 			{
 				reg.y = reg.r;
@@ -79,7 +76,9 @@ region get_child_region(const wtree* tree, region reg, uint8_t child_n)
 				reg.x = reg.c;
 				reg.c = prev_reg.c - reg.c;
 			}
+			n++;
 		}
+		n <<= 1;
 		child_n <<= 1;
 	}
 
@@ -101,17 +100,30 @@ int main(void)
 
 	uint8_t cur;
 	region child_region;
-	tree.node[1] = BNODE_CENTER_BITS/2;
-	child_region = get_child_region(&tree, scr_reg, 2);
-	tree.node[2] = BNODE_WINDOW;
-	tree.flag[2] = BNODE_IS_DIRTY_BIT;
-	tree.nwin[2] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
-	box(tree.nwin[2], 0, 0);
-	child_region = get_child_region(&tree, scr_reg, 3);
+	tree.node[1] = BNODE_CENTER_BITS;
+
+	tree.node[2] = BNODE_CENTER_BITS | BNODE_IS_HORIZONTAL_BIT;
+
 	tree.node[3] = BNODE_WINDOW;
 	tree.flag[3] = BNODE_IS_DIRTY_BIT;
+
+	tree.node[4] = BNODE_WINDOW;
+	tree.flag[4] = BNODE_IS_DIRTY_BIT;
+
+	tree.node[5] = BNODE_WINDOW;
+	tree.flag[5] = BNODE_IS_DIRTY_BIT;
+
+	child_region = get_child_region(&tree, scr_reg, 3);
 	tree.nwin[3] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[3], 0, 0);
+
+	child_region = get_child_region(&tree, scr_reg, 4);
+	tree.nwin[4] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
+	box(tree.nwin[4], 0, 0);
+
+	child_region = get_child_region(&tree, scr_reg, 5);// bad
+	tree.nwin[5] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
+	box(tree.nwin[5], 0, 0);
 
 	int c;
 	do
@@ -165,7 +177,7 @@ FINISH_TREE:
 		{
 			case 'l':
 		}
-	} while ( ( c = wgetch(tree.nwin[2]) ) != 'q');
+	} while ( ( c = wgetch(tree.nwin[3]) ) != 'q');
 
 	endwin();
 	return 0;
