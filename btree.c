@@ -12,6 +12,7 @@ typedef uint8_t bnode;
 #define BNODE_WINDOW              1
 #define BNODE_FRACTION_BITS      63
 #define BNODE_CENTER_BITS        31
+#define BNODE_THIRD_BITS         21
 
 typedef uint8_t bwin;
 #define BNODE_IS_DIRTY_BIT 1 << 7
@@ -32,7 +33,6 @@ typedef struct wtree
 	bwin    flag[255];
 	WINDOW* nwin[255];
 } wtree;
-
 typedef struct region
 {
 	int r;
@@ -41,50 +41,26 @@ typedef struct region
 	int x;
 } region;
 
-region get_child_region(const wtree* tree, region reg, uint8_t child_n)
+const region* get_child_region(const wtree* tree_ptr, region full_region, uint8_t n)
 {
-	if (child_n < 2)
-		return reg;
+	static region[2];
 
-	int bin_stack_len = 7;
-	for (;(child_n & 128) == 0; bin_stack_len--) 
-		child_n <<= 1;
-	child_n <<= 1;
-
-	uint8_t n = 1;
-	region prev_reg;
-	for (int i = 0; i < bin_stack_len; i++)
+	switch (layer)
 	{
-		if (tree->node[n] == BNODE_WINDOW)
-			return prev_reg;
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+			if (tree_ptr == NULL)
+				return NULL;
+			if (tree->node[n]
 
-		prev_reg = reg;
-		if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
-			reg.r = reg.r * (tree->node[n] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
-		else
-			reg.c = reg.c * (tree->node[n] & BNODE_FRACTION_BITS) / BNODE_FRACTION_BITS;
-
-		if (child_n & 128)
-		{
-			if (tree->node[n] & BNODE_IS_HORIZONTAL_BIT)
-			{
-				reg.y = reg.r;
-				reg.r = prev_reg.r - reg.r;
-			}
-			else
-			{
-				reg.x = reg.c;
-				reg.c = prev_reg.c - reg.c;
-			}
-			n <<= 1;
-			n++;
-		}
-		else
-			n <<= 1;
-		child_n <<= 1;
+			return region;
 	}
-
-	return reg;
+	return NULL;
 }
 
 int main(void)
@@ -102,11 +78,11 @@ int main(void)
 
 	uint8_t cur;
 	region child_region;
-	tree.node[1] = BNODE_CENTER_BITS;
+	tree.node[1] = BNODE_THIRD_BITS;
 
 	tree.node[2] = BNODE_CENTER_BITS | BNODE_IS_HORIZONTAL_BIT;
 
-	tree.node[3] = BNODE_CENTER_BITS | BNODE_IS_HORIZONTAL_BIT;
+	tree.node[3] = BNODE_CENTER_BITS;
 
 	tree.node[4] = BNODE_WINDOW;
 	tree.flag[4] = BNODE_IS_DIRTY_BIT;
@@ -120,25 +96,30 @@ int main(void)
 	tree.node[7] = BNODE_WINDOW;
 	tree.flag[7] = BNODE_IS_DIRTY_BIT;
 
-	child_region = get_child_region(&tree, scr_reg, 3);
-	tree.nwin[3] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
-	box(tree.nwin[3], 0, 0);
+	child_region = get_child_region(&tree, scr_reg, 1);
+	//$2 = {r = 44, c = 76, y = 0, x = 0}
 
 	child_region = get_child_region(&tree, scr_reg, 4);
 	tree.nwin[4] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[4], 0, 0);
+	//$6 = {r = 21, c = 25, y = 0, x = 0}
 
 	child_region = get_child_region(&tree, scr_reg, 5);
 	tree.nwin[5] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[5], 0, 0);
+	//$7 = {r = 23, c = 25, y = 21, x = 0}
 
 	child_region = get_child_region(&tree, scr_reg, 6);
 	tree.nwin[6] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[6], 0, 0);
+	//$8 = {r = 44, c = 25, y = 0, x = 25}
 
 	child_region = get_child_region(&tree, scr_reg, 7);
 	tree.nwin[7] = newwin(child_region.r, child_region.c, child_region.y, child_region.x);
 	box(tree.nwin[7], 0, 0);
+	//$9 = {r = 44, c = 26, y = 0, x = 25}
+	// 25 + 25 + 26 = 76
+	// this x should be 25 + 25 (50) but instead it's 25
 
 	int c;
 	do
